@@ -17,6 +17,7 @@ async function run() {
     try {
         await client.connect();
         const serviceCollection = client.db('doctors_portal').collection('services');
+        const bookingCollection = client.db('doctors_portal').collection('bookings');
 
         app.get('/service', async (req, res) => {
             const query = {};
@@ -25,6 +26,25 @@ async function run() {
             res.send(services);
 
 
+        });
+
+        app.get('/available', async (req, res) => {
+            const date = req.query.date || 'May 17, 2022';
+            const services = await serviceCollection.find().toArray();
+            const query = { date: date };
+            const bookings=await bookingCollection.find(query).toArray()
+            res.send(services)
+        })
+
+        app.post('/booking', async (req, res) => {
+            const booking = req.body;
+            const query = { treatment: booking.treatment, date: booking.date, patient: booking.patient };
+            const exists = await bookingCollection.findOne(query);
+            if (exists) {
+                return res.send({ success: false, booking: exists })
+            }
+            const result = await bookingCollection.insertOne(booking);
+            return res.send({ success: true, result });
         })
     }
     finally {
